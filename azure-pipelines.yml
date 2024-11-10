@@ -4,14 +4,14 @@ trigger:
       - main
 
 pool:
-  vmImage: 'window 10 pro'
+  vmImage: 'windows-latest'  # Updated to a compatible image
 
 variables:
-  azureSubscription: 'MyAzureConnection' # Replace with your Azure DevOps service connection name
+  azureSubscription: 'MyAzureConnection'  # Make sure this matches your service connection name
   keyVaultResourceGroup: 'KeyVaultResourceGroup'
   keyVaultLocation: 'eastus'
   keyVaultName: 'MyProjectKeyVault'
-  resourceGroup: 'LoadBalancerResourceGroup' # For ARM template deployment
+  resourceGroup: 'LoadBalancerResourceGroup'  # For ARM template deployment
   location: 'eastus'
   templateFile: 'loadbalancer-vms-template.json'
 
