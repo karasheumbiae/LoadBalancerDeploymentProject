@@ -1,0 +1,84 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'Azure Subscription 1' # Replace with your Azure DevOps service connection name
+  keyVaultResourceGroup: 'KeyVaultResourceGroup'
+  keyVaultLocation: 'eastus'
+  keyVaultName: 'MyProjectKeyVault'
+  resourceGroup: 'LoadBalancerResourceGroup' # For ARM template deployment
+  location: 'eastus'
+  templateFile: 'loadbalancer-vms-template.json'
+
+stages:
+  - stage: SetupKeyVault
+    displayName: "Create Resource Group and Key Vault"
+    jobs:
+      - job: CreateResources
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Creating resource group $(keyVaultResourceGroup) if it doesn't already exist."
+                az group create --name $(keyVaultResourceGroup) --location $(keyVaultLocation)
+                echo "Creating Key Vault $(keyVaultName) in resource group $(keyVaultResourceGroup)."
+                az keyvault create --name $(keyVaultName) --resource-group $(keyVaultResourceGroup) --location $(keyVaultLocation)
+                echo "Adding secrets to Key Vault $(keyVaultName)."
+                az keyvault secret set --vault-name $(keyVaultName) --name "DatabasePassword" --value "YourDatabasePassword123"
+                az keyvault secret set --vault-name $(keyVaultName) --name "APIKey" --value "YourAPIKeyValue"
+
+  - stage: Validate
+    displayName: "Validate ARM Template"
+    dependsOn: SetupKeyVault
+    jobs:
+      - job: Validation
+        displayName: "ARM Template Validation"
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Validating ARM template..."
+                az group create --name $(resourceGroup) --location $(location)
+                az deployment group validate --resource-group $(resourceGroup) --template-file $(templateFile)
+                if [ $? -ne 0 ]; then
+                  echo "Template validation failed!"
+                  exit 1
+                else
+                  echo "Template validation successful!"
+                fi
+
+  - stage: Deploy
+    displayName: "Deploy to Azure"
+    dependsOn: Validate
+    jobs:
+      - job: Deployment
+        displayName: "Deploy ARM Template to Azure"
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: $(azureSubscription)
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                echo "Starting deployment of resources..."
+                az deployment group create --resource-group $(resourceGroup) --template-file $(templateFile)
+                if [ $? -ne 0 ]; then
+                  echo "Deployment failed!"
+                  exit 1
+                else
+                  echo "Deployment successful!"
+                fi
