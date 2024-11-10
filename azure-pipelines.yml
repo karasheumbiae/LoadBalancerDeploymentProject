@@ -7,7 +7,7 @@ pool:
   vmImage: 'window 10 pro'
 
 variables:
-  azureSubscription: 'Azure subscription 1' # Replace with your Azure DevOps service connection name
+  azureSubscription: 'MyAzureConnection' # Replace with your Azure DevOps service connection name
   keyVaultResourceGroup: 'KeyVaultResourceGroup'
   keyVaultLocation: 'eastus'
   keyVaultName: 'MyProjectKeyVault'
