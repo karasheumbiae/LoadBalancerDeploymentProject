@@ -4,7 +4,7 @@ trigger:
       - main
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'window 10 pro'
 
 variables:
   azureSubscription: 'Azure subscription 1' # Replace with your Azure DevOps service connection name
